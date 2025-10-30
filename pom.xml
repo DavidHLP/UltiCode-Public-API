@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
     <groupId>com.david</groupId>
-    <artifactId>UltiCode</artifactId>
+    <artifactId>UltiCode-Public</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>UltiCode-Public</name>
@@ -37,6 +37,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
+
+<!--    <modules>-->
+<!--        <module>commons</module>-->
+<!--        <module>gateway</module>-->
+<!--        <module>auth</module>-->
+<!--    </modules>-->
 
     <dependencyManagement>
         <dependencies>

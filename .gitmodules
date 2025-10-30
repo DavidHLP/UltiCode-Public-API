@@ -1,0 +1,12 @@
+[submodule "UltiCode-Auth"]
+	path = auth
+	url = git@github.com:DavidHLP/UltiCode-Auth.git
+	branch = main
+[submodule "UltiCode-Commons"]
+	path = commons
+	url = git@github.com:DavidHLP/UltiCode-Commons.git
+	branch = main
+[submodule "UltiCode-Gateway"]
+	path = gateway
+	url = git@github.com:DavidHLP/UltiCode-Gateway.git
+	branch = main
