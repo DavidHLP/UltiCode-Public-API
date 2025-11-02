@@ -41,6 +41,7 @@
     <modules>
         <module>commons</module>
         <module>public-problem</module>
+        <module>public-dashboard</module>
     </modules>
 
     <dependencyManagement>

@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 @MapperScan("com.david.open.problem.mapper")
 public class PublicProblemApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(PublicProblemApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(PublicProblemApplication.class, args);
+  }
 }
