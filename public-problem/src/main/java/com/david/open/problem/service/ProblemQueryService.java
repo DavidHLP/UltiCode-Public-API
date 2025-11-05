@@ -2,17 +2,24 @@ package com.david.open.problem.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.david.core.exception.BusinessException;
 import com.david.open.problem.dto.ProblemCardView;
 import com.david.open.problem.dto.ProblemCardView.DifficultyInfo;
 import com.david.open.problem.dto.ProblemCardView.ProblemMetadata;
 import com.david.open.problem.dto.ProblemCardView.ProblemStats;
 import com.david.open.problem.dto.ProblemCardView.TagInfo;
+import com.david.open.problem.dto.ProblemDetailResponse;
+import com.david.open.problem.dto.ProblemDetailResponse.LanguageConfig;
 import com.david.open.problem.dto.ProblemListResponse;
 import com.david.open.problem.entity.Difficulty;
+import com.david.open.problem.entity.Language;
 import com.david.open.problem.entity.Problem;
+import com.david.open.problem.entity.ProblemLanguageConfig;
 import com.david.open.problem.entity.ProblemStatement;
 import com.david.open.problem.mapper.DifficultyMapper;
+import com.david.open.problem.mapper.LanguageMapper;
 import com.david.open.problem.mapper.ProblemMapper;
+import com.david.open.problem.mapper.ProblemLanguageConfigMapper;
 import com.david.open.problem.mapper.ProblemStatementMapper;
 import com.david.open.problem.mapper.ProblemTagMapper;
 import com.david.open.problem.mapper.ProblemTagMapper.TagRelationRow;
@@ -21,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +57,8 @@ public class ProblemQueryService {
     private final ProblemStatementMapper problemStatementMapper;
     private final DifficultyMapper difficultyMapper;
     private final ProblemTagMapper problemTagMapper;
+    private final ProblemLanguageConfigMapper problemLanguageConfigMapper;
+    private final LanguageMapper languageMapper;
     private final ObjectMapper objectMapper;
 
     public ProblemQueryService(
@@ -56,11 +66,15 @@ public class ProblemQueryService {
             ProblemStatementMapper problemStatementMapper,
             DifficultyMapper difficultyMapper,
             ProblemTagMapper problemTagMapper,
+            ProblemLanguageConfigMapper problemLanguageConfigMapper,
+            LanguageMapper languageMapper,
             ObjectMapper objectMapper) {
         this.problemMapper = problemMapper;
         this.problemStatementMapper = problemStatementMapper;
         this.difficultyMapper = difficultyMapper;
         this.problemTagMapper = problemTagMapper;
+        this.problemLanguageConfigMapper = problemLanguageConfigMapper;
+        this.languageMapper = languageMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -108,6 +122,58 @@ public class ProblemQueryService {
 
         boolean hasMore = (long) safePage * safeSize < total;
         return new ProblemListResponse(total, safePage, safeSize, hasMore, items);
+    }
+
+    public ProblemDetailResponse getProblemDetail(String slug, String langCode) {
+        if (slug == null || slug.isBlank()) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "题目标识不能为空");
+        }
+        String normalizedSlug = slug.trim();
+        String normalizedLang = normalizeLang(langCode);
+
+        Problem problem =
+                problemMapper.selectOne(
+                        basePublishedProblemQuery().eq(Problem::getSlug, normalizedSlug));
+        if (problem == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "题目不存在或尚未公开");
+        }
+
+        ProblemStatement statement =
+                loadStatements(List.of(problem.getId()), normalizedLang).get(problem.getId());
+        if (statement == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "题目描述暂不可用");
+        }
+
+        Difficulty difficulty =
+                problem.getDifficultyId() == null
+                        ? null
+                        : difficultyMapper.selectById(problem.getDifficultyId());
+        List<TagInfo> tags = loadTags(List.of(problem.getId())).getOrDefault(problem.getId(), List.of());
+        DifficultyInfo difficultyInfo =
+                difficulty == null
+                        ? null
+                        : new DifficultyInfo(
+                                difficulty.getId(),
+                                difficulty.getCode(),
+                                difficultyLabel(difficulty.getCode()));
+
+        ProblemStats stats = new ProblemStats(problem.getTimeLimitMs(), problem.getMemoryLimitKb());
+        ProblemMetadata metadata = parseMetadata(problem.getId(), problem.getMetaJson());
+        List<LanguageConfig> languageConfigs = loadLanguageConfigs(problem.getId());
+
+        return new ProblemDetailResponse(
+                problem.getId(),
+                problem.getSlug(),
+                statement.getTitle(),
+                statement.getDescriptionMd(),
+                statement.getConstraintsMd(),
+                statement.getExamplesMd(),
+                difficultyInfo,
+                stats,
+                metadata,
+                tags,
+                languageConfigs,
+                problem.getUpdatedAt());
     }
 
     private LambdaQueryWrapper<Problem> basePublishedProblemQuery() {
@@ -174,6 +240,47 @@ public class ProblemQueryService {
                     .add(new TagInfo(row.tagId(), row.name(), row.slug()));
         }
         return result;
+    }
+
+    private List<LanguageConfig> loadLanguageConfigs(Long problemId) {
+        List<ProblemLanguageConfig> configs =
+                problemLanguageConfigMapper.selectList(
+                        Wrappers.lambdaQuery(ProblemLanguageConfig.class)
+                                .eq(ProblemLanguageConfig::getProblemId, problemId));
+        if (configs.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Integer> languageIds =
+                configs.stream()
+                        .map(ProblemLanguageConfig::getLanguageId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        Map<Integer, Language> languageMap =
+                languageIds.isEmpty()
+                        ? Map.of()
+                        : languageMapper.selectBatchIds(languageIds).stream()
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toMap(Language::getId, Function.identity()));
+
+        return configs.stream()
+                .map(
+                        cfg -> {
+                            Language lang = languageMap.get(cfg.getLanguageId());
+                            return new LanguageConfig(
+                                    cfg.getLanguageId(),
+                                    lang != null ? lang.getCode() : null,
+                                    lang != null ? lang.getDisplayName() : null,
+                                    cfg.getFunctionName(),
+                                    cfg.getStarterCode());
+                        })
+                .sorted(
+                        (a, b) -> {
+                            String left = a.languageName() != null ? a.languageName() : "";
+                            String right = b.languageName() != null ? b.languageName() : "";
+                            return left.compareToIgnoreCase(right);
+                        })
+                .toList();
     }
 
     private ProblemCardView toView(
