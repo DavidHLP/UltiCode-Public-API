@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/commons/core/email/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/exception/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/forward/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/http/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/mybatis/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/password/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/security/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/specifications/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/core/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/service-starter/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/commons/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/public-dashboard/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/public-problem/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+  </component>
+</project>
